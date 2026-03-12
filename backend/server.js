@@ -1,50 +1,47 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
+const express = require("express")
+const http = require("http")
+const socketio = require("socket.io")
 
-const app = express();
-app.use(cors());
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const app = express()
+const server = http.createServer(app)
+const io = socketio(server)
 
-const rooms = {};
+let rooms = {}
 
-io.on('connection', (socket) => {
-    console.log('Player connected:', socket.id);
+io.on("connection", socket => {
 
-    // Create Room
-    socket.on('createRoom', () => {
-        const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        rooms[roomCode] = { players: [socket.id], gameState: null };
-        socket.join(roomCode);
-        socket.emit('roomCreated', roomCode);
-    });
+    console.log("Player connected")
 
-    // Join Room
-    socket.on('joinRoom', (roomCode) => {
-        if (rooms[roomCode] && rooms[roomCode].players.length < 4) {
-            rooms[roomCode].players.push(socket.id);
-            socket.join(roomCode);
-            io.to(roomCode).emit('playerJoined', rooms[roomCode].players);
-        } else {
-            socket.emit('error', 'Room full or does not exist');
+    socket.on("createRoom", () => {
+
+        let roomCode = Math.random().toString(36).substring(7)
+
+        rooms[roomCode] = []
+
+        rooms[roomCode].push(socket.id)
+
+        socket.join(roomCode)
+
+        socket.emit("roomCreated", roomCode)
+
+    })
+
+    socket.on("joinRoom", (code) => {
+
+        if(rooms[code]){
+
+            rooms[code].push(socket.id)
+
+            socket.join(code)
+
+            io.to(code).emit("playerJoined")
+
         }
-    });
 
-    // Handle Dice Roll & Moves
-    socket.on('makeMove', (data) => {
-        const { roomCode, player, tokenIndex, diceValue } = data;
-        // Broadcast move to all other players in the room
-        socket.to(roomCode).emit('updateBoard', data);
-    });
+    })
 
-    socket.on('disconnect', () => {
-        console.log('Player disconnected:', socket.id);
-        // Implement logic to handle player drops/reconnects here
-    });
-});
+})
 
 server.listen(3000, () => {
-    console.log('Ludo Multiplayer Server running on port 3000');
-});
+    console.log("Server running on port 3000")
+})
