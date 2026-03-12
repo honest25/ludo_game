@@ -1,33 +1,52 @@
 import 'package:flutter/material.dart';
-import 'main_menu.dart';
+import '../multiplayer/socket_service.dart';
 
-class SplashScreen extends StatefulWidget {
+class LobbyScreen extends StatefulWidget {
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  _LobbyScreenState createState() => _LobbyScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _LobbyScreenState extends State<LobbyScreen> {
+
+  String roomId = "";
 
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => MainMenu()),
-      );
+    // Server response listener
+    SocketService().socket.on("room_created", (data) {
+      setState(() {
+        roomId = data;
+      });
+
+      print("Room Created: $roomId");
     });
+
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      backgroundColor: Colors.red,
+      appBar: AppBar(title: Text("Multiplayer Lobby")),
       body: Center(
-        child: Text(
-          "LUDO",
-          style: TextStyle(fontSize: 50, color: Colors.white),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+
+            ElevatedButton(
+              onPressed: () {
+                SocketService().createRoom();
+              },
+              child: Text("Create Room"),
+            ),
+
+            SizedBox(height: 20),
+
+            Text("Room Code: $roomId")
+
+          ],
         ),
       ),
     );
